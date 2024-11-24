@@ -1,0 +1,213 @@
+﻿@page "/"
+@using MudBlazor
+@inject NavigationManager NavigationManager
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="dashboard-container">
+    <!-- Welcome Section -->
+    <div class="header-section">
+        <img src="logo.png" alt="TaskMaster Logo" class="dashboard-logo" />
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="dashboard-title">Welcome to TaskMaster</MudText>
+        <MudText Typo="Typo.body1" Align="Align.Center" Class="dashboard-subtitle">
+            Boost your productivity with style and simplicity.
+        </MudText>
+    </div>
+
+    <!-- Navigation Grid -->
+    <div class="dashboard-grid">
+        @foreach (var item in NavigationItems)
+        {
+            <div class="dashboard-card" @onclick="() => NavigateTo(item.Link)">
+                <div class="card-content">
+                    <div class="card-icon-wrapper">
+                        <MudIcon Icon="@item.Icon" Size="Size.Large" />
+                    </div>
+                    <MudText Typo="Typo.h5" Align="Align.Center" Class="card-title">@item.Title</MudText>
+                    <MudText Typo="Typo.body2" Align="Align.Center" Class="card-description">@item.Description</MudText>
+                </div>
+            </div>
+        }
+    </div>
+    
+</MudContainer>
+
+<style>
+    /* General Container */
+    .dashboard-container {
+        padding: 20px 24px;
+        background: linear-gradient(135deg, #f5f7fa, #ffffff);
+        min-height: 100vh;
+    }
+
+    /* Header Section */
+    .header-section {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+
+    .dashboard-logo {
+        width: 160px;
+        margin-bottom: 16px;
+    }
+
+    .dashboard-title {
+        font-weight: 800;
+        color: #3c4858;
+        margin-bottom: 12px;
+    }
+
+    .dashboard-subtitle {
+        color: #6c757d;
+        max-width: 480px;
+        margin: 0 auto;
+        line-height: 1.6;
+        font-size: 1rem;
+    }
+
+    /* Navigation Grid */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        justify-content: center;
+        margin: 0 auto;
+        max-width: 1200px; /* To ensure it aligns in the center */
+    }
+
+    /* Dashboard Card */
+    .dashboard-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        padding: 24px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+        border: 1px solid #f0f0f5;
+    }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
+            border-color: rgba(89, 74, 226, 0.6);
+        }
+
+    .card-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .card-icon-wrapper {
+        background: linear-gradient(145deg, #594AE2, #7d6ff0);
+        color: white;
+        padding: 16px;
+        border-radius: 50%;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0px 6px 12px rgba(89, 74, 226, 0.3);
+    }
+
+    .card-title {
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #1f2937;
+    }
+
+    .card-description {
+        color: #6b7280;
+        text-align: center;
+        line-height: 1.5;
+        font-size: 0.9rem;
+    }
+
+    /* Media Queries for Responsiveness */
+    @@media (max-width: 1024px) {
+        .dashboard-grid {
+            grid-template-columns: repeat(2, 1fr); /* 2 columns for smaller screens */
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr; /* Single column for mobile devices */
+        }
+
+        .dashboard-card {
+            padding: 20px;
+        }
+
+        .dashboard-logo {
+            width: 140px;
+        }
+
+        .card-icon-wrapper {
+            padding: 12px;
+        }
+    }
+</style>
+
+@code {
+    private List<NavigationItem> NavigationItems = new()
+    {
+        new NavigationItem
+        {
+            Title = "My Tasks",
+            Description = "View and manage your tasks efficiently.",
+            Icon = Icons.Material.Filled.ListAlt,
+            Link = "/tasks"
+        },
+        new NavigationItem
+        {
+            Title = "Calendar",
+            Description = "Visualize all tasks in your schedule.",
+            Icon = Icons.Material.Filled.CalendarToday,
+            Link = "/calendar"
+        },
+        new NavigationItem
+        {
+            Title = "Share Tasks",
+            Description = "Collaborate and share tasks easily.",
+            Icon = Icons.Material.Filled.Email,
+            Link = "/share-task"
+        },
+        new NavigationItem
+        {
+            Title = "Settings",
+            Description = "Customize your preferences and profile.",
+            Icon = Icons.Material.Filled.Settings,
+            Link = "/settings"
+        },
+        new NavigationItem
+        {
+            Title = "Help",
+            Description = "Find answers and support for your queries.",
+            Icon = Icons.Material.Filled.HelpOutline,
+            Link = "/help"
+        },
+        new NavigationItem
+        {
+        Title = "About",
+        Description = "Stay tuned about the application",
+        Icon = Icons.Material.Filled.Info,
+        Link = "/about"
+    }
+    };
+
+    private void NavigateTo(string url)
+    {
+        NavigationManager.NavigateTo(url);
+    }
+
+    private class NavigationItem
+    {
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string Icon { get; set; }
+        public string Link { get; set; }
+    }
+}

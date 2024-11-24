@@ -1,0 +1,250 @@
+﻿@page "/calendar"
+@using Microsoft.EntityFrameworkCore
+@using MudBlazor
+@using WebTaskMaster.Model
+@inject WebTaskMaster.Model.TaskMasterContext DbContext
+@inject ISnackbar Snackbar
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="calendar-container">
+    <!-- Page Title -->
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="calendar-title">
+        Task Calendar
+    </MudText>
+    <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="calendar-subtitle">
+        View your tasks by date.
+    </MudText>
+
+    <!-- Calendar -->
+    <div class="calendar-wrapper">
+        <MudDatePicker T="DateTime?"
+                       Date="@SelectedDate"
+                       DateChanged="HandleDateChanged"
+                       PickerVariant="PickerVariant.Static"
+                       StartOfWeek="DayOfWeek.Monday"
+                       Class="date-picker"
+                       AdditionalDateClassesFunc="CheckDate" />
+    </div>
+
+    <!-- Task List for Selected Date -->
+    <MudText Typo="Typo.h6" Align="Align.Left" Class="task-list-title">
+        Tasks for @SelectedDate?.ToString("MMMM dd, yyyy")
+    </MudText>
+
+    <MudGrid Class="task-grid">
+        @if (TasksForSelectedDate.Any())
+        {
+            @foreach (var task in TasksForSelectedDate)
+            {
+                <MudItem>
+                    <MudCard Class="task-card" Elevation="3">
+                        <MudCardHeader>
+                            <MudAvatar Color="@(task.Completed ? Color.Success : Color.Primary)" Variant="Variant.Filled" Size="Size.Medium">
+                                <MudIcon Icon="@(task.Completed ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Task)" />
+                            </MudAvatar>
+                            <MudText Typo="Typo.h6" Class="task-title">@task.TaskTitle</MudText>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Class="task-description">@task.TaskDescription</MudText>
+                            <MudDivider Class="date-divider" />
+                            <div class="task-dates">
+                                <MudIcon Icon="@Icons.Material.Filled.Event" Class="icon-dates" />
+                                <span class="date-text">
+                                    <strong>Start:</strong> @(task.StartDate == null ? "Not Set" : task.StartDate.Value.ToString("g"))
+                                </span>
+                                <span class="date-text">
+                                    <strong>End:</strong> @(task.EndDate == null ? "Not Set" : task.EndDate.Value.ToString("g"))
+                                </span>
+                            </div>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            }
+        }
+        else
+        {
+            <MudText Typo="Typo.body1" Align="Align.Center" Class="no-tasks-message">
+                No tasks for the selected date.
+            </MudText>
+        }
+    </MudGrid>
+</MudContainer>
+
+<style>
+    .calendar-container {
+        padding: 24px;
+    }
+
+    .calendar-title {
+        margin-bottom: 16px;
+    }
+
+    .calendar-subtitle {
+        color: #888;
+        margin-bottom: 24px;
+    }
+
+    .calendar-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 24px;
+    }
+
+    .date-picker {
+        max-width: 400px;
+    }
+
+    .task-list-title {
+        margin-top: 24px;
+        margin-bottom: 16px;
+    }
+
+    .task-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .task-card {
+        padding: 16px;
+        border-radius: 12px;
+        background-color: #f9f9f9;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .task-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .task-title {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-left: 8px;
+    }
+
+    .task-description {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+        margin-bottom: 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .date-divider {
+        margin: 8px 0;
+    }
+
+    .task-dates {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.85rem;
+        color: #95a5a6;
+        padding: 8px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        margin-top: 8px;
+    }
+
+    .icon-dates {
+        color: #e67e22;
+        margin-right: 8px;
+    }
+
+    .date-text {
+        margin-left: 4px;
+    }
+
+    .no-tasks-message {
+        color: #666;
+        margin-top: 16px;
+    }
+
+    .completed-day {
+        background-color: #00C854;
+        color: white !important;
+        border-radius: 50%;
+    }
+
+    .incomplete-day {
+        background-color: #594AE2;
+        color: white !important;
+        border-radius: 50%;
+    }
+</style>
+
+@code {
+    private DateTime? SelectedDate = DateTime.Today;
+    private List<Activity> AllTasks = new();
+    private List<Activity> TasksForSelectedDate = new();
+    private int? UserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        UserId = await LocalStorage.GetItemAsync<int?>("userId");
+        if (UserId == null)
+        {
+            Snackbar.Add("You must log in to view your tasks.", Severity.Warning);
+            return;
+        }
+
+        // Load all tasks for the logged-in user
+        AllTasks = await DbContext.Activities
+            .Where(t => t.UserId == UserId.Value && t.StartDate != null)
+            .OrderBy(t => t.StartDate)
+            .ToListAsync();
+
+        UpdateTasksForSelectedDate();
+    }
+
+    private void UpdateTasksForSelectedDate()
+    {
+        if (SelectedDate.HasValue)
+        {
+            var selectedDateOnly = SelectedDate.Value.Date;
+            TasksForSelectedDate = AllTasks
+                .Where(t => t.StartDate.HasValue &&
+                            t.StartDate.Value.Date <= selectedDateOnly &&
+                            (!t.EndDate.HasValue || t.EndDate.Value.Date >= selectedDateOnly))
+                .OrderBy(t => t.StartDate)
+                .ToList();
+        }
+        else
+        {
+            TasksForSelectedDate.Clear(); // Clear the list if no date is selected
+        }
+        
+    }
+
+
+
+    private string CheckDate(DateTime date)
+    {
+        var tasksForDate = AllTasks
+            .Where(t => t.StartDate.HasValue &&
+                        t.StartDate.Value.Date <= date.Date &&
+                        (!t.EndDate.HasValue || t.EndDate.Value.Date >= date.Date))
+            .ToList();
+
+        if (!tasksForDate.Any())
+            return string.Empty;
+
+        var allCompleted = tasksForDate.All(t => t.Completed);
+        return allCompleted ? "completed-day" : "incomplete-day";
+    }
+
+
+    private async Task HandleDateChanged(DateTime? newDate)
+    {
+        if (newDate != SelectedDate)
+        {
+            SelectedDate = newDate;
+            UpdateTasksForSelectedDate();
+        }
+    }
+
+
+}

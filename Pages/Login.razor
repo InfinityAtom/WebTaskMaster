@@ -1,0 +1,181 @@
+﻿@page "/login"
+@using Microsoft.EntityFrameworkCore
+@using WebTaskMaster.Model
+@inject NavigationManager NavigationManager
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject WebTaskMaster.Model.TaskMasterContext DbContext
+@inject ISnackbar snackbar
+@layout WebTaskMaster.Shared.LoginLayout
+
+<style>
+    /* Container Styling */
+    .login-container {
+        max-width: 450px;
+        margin: 5% auto;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        padding: 50px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Logo Styling */
+    .login-logo {
+        width: 300px; /* Adjust as needed */
+        margin-bottom: 20px;
+    }
+
+    /* Title Styling */
+    .login-title {
+        font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        font-size: 28px;
+        font-weight: bold;
+        color: #4a4a4a;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    /* Text Fields Styling */
+    .login-field {
+        width: 100%;
+        margin-top: 12px;
+    }
+
+    /* Button Styling */
+    .login-button {
+        width: 100%;
+        background-color: #007aff;
+        color: #fff;
+        border-radius: 10px;
+        padding: 10px;
+        font-weight: bold;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        margin-top: 20px;
+    }
+
+        .login-button:hover {
+            background-color: #005bb5;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+    /* Link Styling */
+    .login-link {
+        font-size: 14px;
+        color: #007aff;
+        text-decoration: none;
+        transition: color 0.2s ease;
+        margin-top: 15px;
+    }
+
+        .login-link:hover {
+            color: #005bb5;
+            text-decoration: underline;
+        }
+
+    /* Subtitle Styling */
+    .login-subtitle {
+        font-size: 14px;
+        color: #888888;
+        text-align: center;
+        margin-top: 15px;
+    }
+
+    /* Additional Styling for Form */
+    .form-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+</style>
+
+<div class="login-container">
+    <!-- Logo Image -->
+    <img src="logo.png" alt="TaskMaster Logo" class="login-logo" />
+
+    <!-- Title -->
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="login-title">Login</MudText>
+
+    <MudForm @ref="form" Valid="HandleValidSubmit" Class="form-container">
+        <MudTextField Label="Username or Email" @bind-Value="usernameOrEmail" Required="true" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Person" Class="login-field" />
+        <MudTextField Label="Password" @bind-Value="password" InputType="InputType.Password" Required="true" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Lock" Class="login-field" />
+
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="LoginUser" Class="login-button" Disabled="isLoading">
+            @if (isLoading)
+            {
+                <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+            }
+            else
+            {
+                @:Login
+            }
+        </MudButton>
+
+    </MudForm>
+
+    <MudText Typo="Typo.body2" Align="Align.Center" Class="login-subtitle">Don't have an account? <MudLink Href="/register" Class="login-link">Register here</MudLink></MudText>
+</div>
+
+@code {
+    private MudForm form;
+
+    private string usernameOrEmail;
+    private string password;
+    private bool isLoading = false; // Loading state
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check if the user ID is already in local storage
+        int? userId = await localStorage.GetItemAsync<int?>("userId");
+
+        // Redirect to the homepage if the user is logged in
+        if (userId.HasValue)
+        {
+            NavigationManager.NavigateTo("/", forceLoad: true);
+        }
+    }
+
+    private async Task LoginUser()
+    {
+        if (isLoading) return;
+
+        isLoading = true; // Start loading
+        try
+        {
+            // Find the user by username or email
+            var user = await DbContext.Users
+                .FirstOrDefaultAsync(u => u.Username == usernameOrEmail || u.Email == usernameOrEmail);
+
+            if (user == null || !VerifyPassword(password, user.PasswordHash))
+            {
+                snackbar.Add("Invalid username or password.", Severity.Error);
+                return;
+            }
+
+            // Store the user ID in local storage
+            await localStorage.SetItemAsync("userId", user.Id);
+
+            // Display a success message and redirect
+            snackbar.Add("Login successful! Redirecting...", Severity.Success);
+            NavigationManager.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false; // Stop loading
+        }
+    }
+
+    private bool VerifyPassword(string inputPassword, byte[] storedHash)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var inputHash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(inputPassword));
+        return inputHash.SequenceEqual(storedHash);
+    }
+}

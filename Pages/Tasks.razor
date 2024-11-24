@@ -1,0 +1,217 @@
+﻿@page "/tasks"
+@using WebTaskMaster.Model
+@using Microsoft.EntityFrameworkCore
+@inject NavigationManager NavigationManager
+@inject WebTaskMaster.Model.TaskMasterContext DbContext
+@inject ISnackbar snackbar
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="page-container">
+    <!-- Header Section -->
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="header-title">My Tasks</MudText>
+    <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="header-subtitle">
+        Manage your tasks effectively.
+    </MudText>
+
+    <!-- Task List Section -->
+    <MudGrid GutterSize="GutterSize.Medium">
+        @if (tasks == null)
+        {
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6" Align="Align.Center">Loading tasks...</MudText>
+            </MudItem>
+        }
+        else if (!tasks.Any())
+        {
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6" Align="Align.Center">No tasks yet. Start by adding one!</MudText>
+            </MudItem>
+        }
+        else
+        {
+            @foreach (var task in tasks)
+            {
+                <MudItem xs="12">
+                    <MudCard Class="task-card" Elevation="3">
+                        <MudCardHeader>
+                            <!-- Avatar with conditional icon and color for task completion -->
+                            <MudAvatar Color="@(task.Completed ? Color.Success : Color.Primary)" Variant="Variant.Filled" Size="Size.Medium" Class="task-icon" OnClick="() => ToggleCompletion(task)">
+                                <MudIcon Icon="@(task.Completed ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Task)" />
+                            </MudAvatar>
+                            <MudText Typo="Typo.h6" Class="task-title">@task.TaskTitle</MudText>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Class="task-description">@task.TaskDescription</MudText>
+                            <MudDivider Class="date-divider" />
+                            <div class="task-dates">
+                                <MudIcon Icon="@Icons.Material.Filled.Event" Class="icon-dates" />
+                                <span class="date-text">
+                                    <strong>Start:</strong> @(task.StartDate == null || task.StartDate == DateTime.MinValue ? "Not Set" : task.StartDate.Value.ToString("g")) <!-- Display Date and Hour -->
+                                </span>
+                                <span class="date-text">
+                                    <strong>End:</strong> @(task.EndDate == null || task.EndDate == DateTime.MinValue || task.EndDate == new DateTime(1900, 1, 1) ? "Not Set" : task.EndDate.Value.ToString("g")) <!-- Display Date and Hour -->
+                                </span>
+                            </div>
+                        </MudCardContent>
+                        <MudDivider />
+                        <MudCardActions Class="task-actions">
+                            <MudButton Variant="Variant.Text" Color="Color.Info" OnClick="() => EditTask(task.TaskId)">
+                                <MudIcon Icon="@Icons.Material.Filled.Edit" /> Edit
+                            </MudButton>
+                            <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="() => DeleteTask(task)">
+                                <MudIcon Icon="@Icons.Material.Filled.Delete" /> Delete
+                            </MudButton>
+                            <MudButton Variant="Variant.Text" Color="Color.Success" OnClick="() => ToggleCompletion(task)">
+                                <MudIcon Icon="@(task.Completed ? Icons.Material.Filled.Undo : Icons.Material.Filled.CheckCircle)" />
+                                @(task.Completed ? "Undo" : "Done")
+                            </MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        }
+    </MudGrid>
+
+    <!-- Floating Action Button -->
+    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NavigateToAddTask" Class="fab" />
+</MudContainer>
+
+<style>
+    .page-container {
+        padding: 24px;
+        position: relative;
+    }
+
+    .header-title {
+        font-weight: bold;
+        color: #4a4a4a;
+        margin-bottom: 16px;
+    }
+
+    .header-subtitle {
+        font-size: 1rem;
+        color: #888888;
+        margin-bottom: 24px;
+    }
+
+    .task-card {
+        border-radius: 12px;
+        margin-bottom: 16px;
+        padding: 16px;
+        transition: box-shadow 0.2s ease-in-out;
+    }
+
+        .task-card:hover {
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+    .task-title {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-left: 8px;
+    }
+
+    .task-icon {
+        margin-right: 8px;
+        cursor: pointer;
+    }
+
+    .task-description {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+        margin-bottom: 8px;
+    }
+
+    .date-divider {
+        margin: 8px 0;
+    }
+
+    .task-dates {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: #95a5a6;
+        padding: 8px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        margin-top: 8px;
+    }
+
+    .icon-dates {
+        color: #e67e22;
+        margin-right: 8px;
+    }
+
+    .date-text {
+        margin-left: 4px;
+    }
+
+    .task-actions {
+        display: flex;
+        justify-content: space-around;
+        padding-top: 8px;
+    }
+
+    .fab {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
+    }
+</style>
+
+@code {
+    private List<Activity> tasks = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        int? userId = await localStorage.GetItemAsync<int?>("userId");
+
+        if (userId.HasValue)
+        {
+            tasks = await DbContext.Activities
+                .Where(a => a.UserId == userId.Value)
+                .ToListAsync();
+        }
+        else
+        {
+            snackbar.Add("User not logged in. Redirecting to login page.", Severity.Warning);
+            NavigationManager.NavigateTo("/login");
+        }
+    }
+
+    private void EditTask(int taskId)
+    {
+        NavigationManager.NavigateTo($"/edit/{taskId}");
+    }
+
+    private async void DeleteTask(Activity task)
+    {
+        try
+        {
+            DbContext.Activities.Remove(task);
+            await DbContext.SaveChangesAsync();
+            tasks.Remove(task);
+            snackbar.Add("Task deleted successfully!", Severity.Success);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            snackbar.Add($"Error deleting task: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async void ToggleCompletion(Activity task)
+    {
+        task.Completed = !task.Completed;
+        DbContext.Update(task);
+        await DbContext.SaveChangesAsync();
+        snackbar.Add(task.Completed ? "Task marked as completed!" : "Task marked as incomplete!", Severity.Success);
+        StateHasChanged();
+    }
+
+    private void NavigateToAddTask()
+    {
+        NavigationManager.NavigateTo("/add-task");
+    }
+}

@@ -1,0 +1,90 @@
+﻿@page "/settings"
+@using MudBlazor
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="settings-container">
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="settings-title">
+        Settings
+    </MudText>
+    <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="settings-subtitle">
+        Manage your account and application preferences.
+    </MudText>
+
+    <!-- Settings Navigation -->
+    <MudGrid GutterSize="GutterSize.Large" Class="settings-grid">
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Class="settings-card">
+                <MudCardHeader>
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Primary" Size="Size.Large" />
+                    <MudText Typo="Typo.h6" Class="settings-card-title">Profile</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText Typo="Typo.body2">
+                        Update your personal information and account details.
+                    </MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Href="/profile" Variant="Variant.Filled" Color="Color.Primary">
+                        Go to Profile Settings
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Class="settings-card">
+                <MudCardHeader>
+                    <MudIcon Icon="@Icons.Material.Filled.Security" Color="Color.Error" Size="Size.Large" />
+                    <MudText Typo="Typo.h6" Class="settings-card-title">Security</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText Typo="Typo.body2">
+                        Update your password and other security settings.
+                    </MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Href="/security" Variant="Variant.Filled" Color="Color.Error">
+                        Go to Security Settings
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+<style>
+    .settings-container {
+        padding: 24px;
+    }
+
+    .settings-title {
+        margin-bottom: 16px;
+    }
+
+    .settings-subtitle {
+        color: #888;
+        margin-bottom: 32px;
+    }
+
+    .settings-grid {
+        margin-top: 16px;
+    }
+
+    .settings-card {
+        border-radius: 12px;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .settings-card:hover {
+        transform: scale(1.03);
+        box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .settings-card-title {
+        font-weight: bold;
+        margin-left: 8px;
+    }
+
+    .settings-card-actions {
+        margin-top: 16px;
+    }
+</style>

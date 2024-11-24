@@ -1,0 +1,579 @@
+﻿@page "/share-task"
+@using MudBlazor
+@using Microsoft.EntityFrameworkCore
+@using System.Net.Mail
+@using System.Net
+@using WebTaskMaster.Model
+@inject WebTaskMaster.Model.TaskMasterContext DbContext
+@inject ISnackbar Snackbar
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="share-task-container">
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="page-title">
+        Share Task
+    </MudText>
+    <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="page-subtitle">
+        Select a user and share a task via email.
+    </MudText>
+
+    <!-- User Selection -->
+    <MudAutocomplete T="string" Label="Select User by Email" @bind-Value="SelectedUserEmail"
+                     SearchFunc="SearchEmails" Class="user-select" />
+
+    <!-- Task Sharing Options -->
+    <MudRadioGroup T="int" Label="Task Sharing Option" @bind-Value="TaskOption" Class="task-options">
+        <MudRadio T="int" Value="1" Color="Color.Primary">Create New Task</MudRadio>
+        <MudRadio T="int" Value="2" Color="Color.Secondary">Share Existing Task</MudRadio>
+    </MudRadioGroup>
+
+    <!-- New Task Form -->
+    @if (TaskOption == 1)
+    {
+        <MudTextField Label="Task Title" @bind-Value="NewTaskTitle" Class="form-field" />
+        <MudTextField Label="Task Description" @bind-Value="NewTaskDescription" Variant="Variant.Outlined" Multiline="true" Class="form-field" />
+        <MudGrid GutterSize="GutterSize.Medium">
+            <MudItem xs="12" sm="6">
+                <MudDatePicker Label="Start Date" @bind-Value="StartDate" Variant="Variant.Outlined" Class="form-field" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTimePicker Label="Start Time" @bind-Value="StartTime" Variant="Variant.Outlined" Class="form-field" />
+            </MudItem>
+        </MudGrid>
+        <MudGrid GutterSize="GutterSize.Medium">
+            <MudItem xs="12" sm="6">
+                <MudDatePicker Label="End Date" @bind-Value="EndDate" Variant="Variant.Outlined" Class="form-field" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTimePicker Label="End Time" @bind-Value="EndTime" Variant="Variant.Outlined" Class="form-field" />
+            </MudItem>
+        </MudGrid>
+    }
+
+    <!-- Existing Tasks as Cards -->
+    @if (TaskOption == 2)
+    {
+        <MudGrid class="task-grid">
+            @if (!UserTasks.Any())
+            {
+                <MudItem xs="12">
+                    <MudText Typo="Typo.h6" Align="Align.Center">No tasks available to share.</MudText>
+                </MudItem>
+            }
+            else
+            {
+                @foreach (var task in UserTasks)
+                {
+                    <MudItem>
+                        <MudCard Class="task-card" Style="@(SelectedTask == task ? "border: 2px solid #4caf50;" : "")">
+                            <MudCardHeader>
+                                <div class="task-header">
+                                    <MudAvatar Color="@(task.Completed ? Color.Success : Color.Primary)" Variant="Variant.Filled" Size="Size.Medium" Class="task-icon">
+                                        <MudIcon Icon="@(task.Completed ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Task)" />
+                                    </MudAvatar>
+                                    <MudText Typo="Typo.h6" Class="task-title">@task.TaskTitle</MudText>
+                                </div>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudText Typo="Typo.body2" Class="task-description">@task.TaskDescription</MudText>
+                                <div class="task-dates">
+                                    <div class="date-text">
+                                        <MudIcon Icon="@Icons.Material.Filled.Event" Class="icon-dates" />
+                                        <span>
+                                            <strong>Start:</strong> @(task.StartDate == null ? "No Start Date" : task.StartDate.Value.ToString("g"))
+                                        </span>
+                                    </div>
+                                    <div class="date-text">
+                                        <MudIcon Icon="@Icons.Material.Filled.Event" Class="icon-dates" />
+                                        <span>
+                                            <strong>End:</strong> @(task.EndDate == null ? "No End Date" : task.EndDate.Value.ToString("g"))
+                                        </span>
+                                    </div>
+                                </div>
+                            </MudCardContent>
+                            <MudCardActions Class="task-actions">
+                                <MudButton Variant="Variant.Filled" Color="Color.Info" Class="select-task-button" OnClick="() => SelectTask(task)">
+                                    Select Task
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+                }
+            }
+        </MudGrid>
+    }
+
+    <!-- Share Task Button -->
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OnShareTask" Disabled="@(!CanShareTask)" Class="share-button">
+        Share Task
+    </MudButton>
+</MudContainer>
+
+<style>
+    .share-task-container {
+        padding: 24px;
+    }
+
+    .page-title {
+        margin-bottom: 16px;
+    }
+
+    .page-subtitle {
+        color: #888;
+        margin-bottom: 24px;
+    }
+
+    .user-select {
+        margin-bottom: 16px;
+    }
+
+    .task-options {
+        margin: 16px 0;
+    }
+
+    .form-field {
+        margin-bottom: 16px;
+        width: 100%;
+    }
+
+    .share-button {
+        margin-top: 24px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .task-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .task-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background-color: #fff;
+        border-radius: 12px;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        padding: 16px;
+        overflow: hidden;
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    }
+
+    .task-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .task-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .task-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .task-title {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: #2c3e50;
+    }
+
+    .task-description {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+        line-height: 1.4;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+        margin-bottom: 16px;
+    }
+
+    .task-dates {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.85rem;
+        color: #95a5a6;
+        padding: 8px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        margin-bottom: 16px;
+    }
+
+    .icon-dates {
+        color: #e67e22;
+        margin-right: 8px;
+    }
+
+    .date-text {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+
+    .task-actions {
+        display: flex;
+        justify-content: center;
+        padding-top: 8px;
+    }
+
+    .select-task-button {
+        width: 100%;
+    }
+</style>
+
+@code {
+    private string SelectedUserEmail;
+    private int TaskOption = 1; // Default to "Create New Task"
+    private string NewTaskTitle;
+    private string NewTaskDescription;
+    private DateTime? StartDate;
+    private TimeSpan? StartTime;
+    private DateTime? EndDate;
+    private TimeSpan? EndTime;
+    private Activity SelectedTask;
+    private List<Activity> UserTasks = new();
+    private List<string> AllEmails = new();
+    private string LoggedUserFirstName { get; set; }
+    private string LoggedUserLastName { get; set; }
+    private string LoggedUserEmail { get; set; }
+    private bool CanShareTask =>
+        !string.IsNullOrWhiteSpace(SelectedUserEmail) &&
+        (TaskOption == 1 || (TaskOption == 2 && SelectedTask != null));
+
+    private DateTime? CombineDateAndTime(DateTime? date, TimeSpan? time)
+    {
+        if (date.HasValue && time.HasValue)
+        {
+            return date.Value.Date + time.Value;
+        }
+        return date; // Return the date if time is not provided
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        int? userId = await localStorage.GetItemAsync<int?>("userId");
+
+        if (userId.HasValue)
+        {
+            var user = await DbContext.Users
+                .Where(u => u.Id == userId.Value)
+                .Select(u => new { u.FirstName, u.LastName, u.Email })
+                .FirstOrDefaultAsync();
+
+            if (user != null)
+            {
+                LoggedUserFirstName = user.FirstName;
+                LoggedUserLastName = user.LastName;
+                LoggedUserEmail = user.Email;
+            }
+
+            UserTasks = await DbContext.Activities
+                .Where(a => a.UserId == userId.Value)
+                .ToListAsync();
+        }
+
+        AllEmails = await DbContext.Users
+            .Select(u => u.Email)
+            .Distinct()
+            .ToListAsync();
+    }
+
+private async Task<IEnumerable<string>> SearchEmails(string searchText)
+{
+    return AllEmails.Where(email => email.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+}
+
+
+    private void SelectTask(Activity task)
+    {
+        SelectedTask = task;
+    }
+
+    private async Task OnShareTask()
+    {
+        try
+        {
+            if (TaskOption == 1)
+            {
+                if (string.IsNullOrWhiteSpace(NewTaskTitle) || string.IsNullOrWhiteSpace(NewTaskDescription))
+                {
+                    Snackbar.Add("Please fill in the task details.", Severity.Warning);
+                    return;
+                }
+
+                // Combine date and time for Start and End
+                var combinedStartDateTime = CombineDateAndTime(StartDate, StartTime);
+                var combinedEndDateTime = CombineDateAndTime(EndDate, EndTime);
+
+                string emailBody = GenerateHtmlEmail(NewTaskTitle, NewTaskDescription, combinedStartDateTime, combinedEndDateTime);
+                string icsContent = GenerateICSFile(NewTaskTitle, NewTaskDescription, combinedStartDateTime, combinedEndDateTime);
+
+                await SendEmail(SelectedUserEmail, "New Task Shared", emailBody, icsContent);
+            }
+            else if (TaskOption == 2 && SelectedTask != null)
+            {
+                string emailBody = GenerateHtmlEmail(SelectedTask.TaskTitle, SelectedTask.TaskDescription, SelectedTask.StartDate, SelectedTask.EndDate);
+                string icsContent = GenerateICSFile(SelectedTask.TaskTitle, SelectedTask.TaskDescription, SelectedTask.StartDate, SelectedTask.EndDate);
+
+                await SendEmail(SelectedUserEmail, "Task Shared", emailBody, icsContent);
+            }
+            else
+            {
+                Snackbar.Add("Please select a task or fill in the task details.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private string GenerateHtmlEmail(string taskTitle, string taskDescription, DateTime? startDate, DateTime? endDate)
+    {
+        string headerImageSrc = "https://infinity-atom.ro/logo.png"; // Replace with your actual logo URL
+        string taskIconSrc = "https://infinity-atom.ro/task-icon.png"; // URL for the PNG task icon
+        string eventIconSrc = "https://infinity-atom.ro/event-icon.png"; // URL for the event PNG icon
+
+        string startDateString = startDate == null || startDate == DateTime.MinValue || startDate == new DateTime(1900, 1, 1)
+            ? "No Start Date"
+            : startDate.Value.ToString("g"); // Display date and time
+        string endDateString = endDate == null || endDate == DateTime.MinValue || endDate == new DateTime(1900, 1, 1)
+            ? "No End Date"
+            : endDate.Value.ToString("g"); // Display date and time
+
+        return $@"
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }}
+        .container {{
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #dddddd;
+            border-radius: 12px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        }}
+        .header {{
+            text-align: center;
+            padding: 10px;
+            background-color: rgba(89,74,226,1);
+            border-radius: 12px 12px 0 0;
+            color: white;
+        }}
+        .header img {{
+            max-width: 150px;
+            margin-bottom: 10px;
+        }}
+        .content {{
+            padding: 20px;
+        }}
+        .task-title-section {{
+            text-align: center;
+            margin: 16px 0;
+        }}
+        .task-title-section h2 {{
+            font-size: 20px;
+            font-weight: bold;
+            color: #333333;
+        }}
+        .task-card {{
+            border: 1px solid #eeeeee;
+            border-radius: 12px;
+            background-color: #f9f9f9;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        }}
+        .task-card:hover {{
+            box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.2);
+        }}
+        .task-header {{
+            display: flex;
+            align-items: center;
+        }}
+        .task-icon {{
+            width: 40px;
+            height: 40px;
+            margin-right: 12px;
+        }}
+        .task-title {{
+            font-weight: bold;
+            font-size: 18px;
+            color: #333333;
+        }}
+        .task-description {{
+            margin-top: 8px;
+            color: #666666;
+        }}
+        .task-dates {{
+            margin-top: 12px;
+            padding: 12px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #888888;
+            border: 1px solid #dddddd;
+        }}
+        .date-icon {{
+            width: 24px;
+            height: 24px;
+            margin-right: 8px;
+        }}
+        .footer {{
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+            color: #777777;
+            background-color: #f4f4f9;
+            border-top: 1px solid #dddddd;
+            border-radius: 0 0 12px 12px;
+        }}
+        .footer a {{
+            color: #4a90e2;
+            text-decoration: none;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <img src='{headerImageSrc}' alt='App Logo'>
+        </div>
+        <div class='task-title-section'>
+            <h2>Task Shared with You</h2>
+        </div>
+        <div class='content'>
+            <div class='task-card'>
+                <div class='task-header'>
+                    <img src='{taskIconSrc}' alt='Task Icon' class='task-icon' />
+                    <div class='task-title'>{taskTitle}</div>
+                </div>
+                <div class='task-description'>
+        {taskDescription}
+                </div>
+                <div class='task-dates'>
+                    <div>
+                        <img src='{eventIconSrc}' alt='Event Icon' class='date-icon' />
+                        <strong>Start:</strong> {startDateString}
+                    </div>
+                    <div>
+                        <strong>End:</strong> {endDateString}
+                    </div>
+                </div>
+            </div>
+            <p>This task was shared with you by <strong>{LoggedUserFirstName} {LoggedUserLastName}</strong>.</p>
+        </div>
+        <div class='footer'>
+            <p>&copy; 2019-2024 Infinity Atom.<br/> All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>";
+    }
+
+
+
+
+
+
+    private async Task SendEmail(string toEmail, string subject, string body, string icsContent)
+    {
+        try
+        {
+            var fromAddress = new MailAddress("noreply-taskmaster@infinity-atom.ro", "Task Master");
+            var toAddress = new MailAddress(toEmail, $"{LoggedUserFirstName} {LoggedUserLastName}");
+
+            using (var smtpClient = new SmtpClient
+                {
+                    Host = "mail.infinity-atom.ro",
+                    Port = 587,
+                    EnableSsl = true,
+                    DeliveryMethod = SmtpDeliveryMethod.Network,
+                    UseDefaultCredentials = false,
+                    Credentials = new NetworkCredential(fromAddress.Address, "Songocu003")
+                })
+            using (var message = new MailMessage(fromAddress, toAddress))
+            {
+                message.Subject = subject;
+                message.Body = body;
+                message.IsBodyHtml = true;
+
+                if (!string.IsNullOrEmpty(icsContent))
+                {
+                    var attachment = new Attachment(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(icsContent)), "task.ics", "text/calendar");
+                    message.Attachments.Add(attachment);
+                }
+
+                await smtpClient.SendMailAsync(message);
+                Snackbar.Add("Email sent successfully!", Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending email: {ex.Message}");
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+            }
+            Snackbar.Add($"Error sending email: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private string GenerateICSFile(string title, string description, DateTime? startDate, DateTime? endDate)
+    {
+        if (startDate == null || startDate == DateTime.MinValue || startDate == new DateTime(1900, 1, 1))
+        {
+            return null; // No ICS file if there's no valid start date
+        }
+
+        var startDateString = startDate.Value.ToUniversalTime().ToString("yyyyMMddTHHmmssZ");
+        var endDateString = endDate.HasValue && endDate != DateTime.MinValue && endDate != new DateTime(1900, 1, 1)
+            ? endDate.Value.ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
+            : startDate.Value.AddHours(1).ToUniversalTime().ToString("yyyyMMddTHHmmssZ"); // Default to 1-hour duration if no end date
+
+        return $@"
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Infinity Atom//TaskMaster//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:{Guid.NewGuid()}
+SUMMARY:Your TaskMaster task: {title}
+DESCRIPTION:{description}
+ORGANIZER;CN={LoggedUserFirstName} {LoggedUserLastName}: mailto:{LoggedUserEmail}
+DTSTART:{startDateString}
+DTEND:{endDateString}
+STATUS:CONFIRMED
+TRANSP:OPAQUE
+BEGIN:VALARM
+TRIGGER:-PT15M
+DESCRIPTION:Reminder
+ACTION:DISPLAY
+END:VALARM
+END:VEVENT
+END:VCALENDAR";
+    }
+
+
+}

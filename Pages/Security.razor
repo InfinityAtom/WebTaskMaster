@@ -1,0 +1,159 @@
+﻿@page "/security"
+@using WebTaskMaster.Model
+@using Microsoft.EntityFrameworkCore
+@inject WebTaskMaster.Model.TaskMasterContext DbContext
+@inject ISnackbar Snackbar
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="security-container">
+    <MudCard Elevation="3" Class="security-card">
+        <MudCardHeader>
+            <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Large">
+                <MudIcon Icon="@Icons.Material.Filled.Security" />
+            </MudAvatar>
+            <MudText Typo="Typo.h5" Align="Align.Left" Class="security-title">Update Password</MudText>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudText Typo="Typo.subtitle1" Align="Align.Left" Class="security-subtitle">
+                Change your account password for security reasons.
+            </MudText>
+            <MudForm @ref="PasswordForm" Valid="IsFormValid">
+                <!-- Current Password -->
+                <MudTextField Label="Current Password" @bind-Value="CurrentPassword" InputType="InputType.Password"
+                              Required="true" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Lock" Class="form-field" />
+
+                <!-- New Password -->
+                <MudTextField Label="New Password" @bind-Value="NewPassword" InputType="InputType.Password"
+                              Required="true" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.VpnKey" Class="form-field" />
+
+                <!-- Confirm Password -->
+                <MudTextField Label="Confirm Password" @bind-Value="ConfirmPassword" InputType="InputType.Password"
+                              Required="true" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.VpnKey" Class="form-field" />
+
+                <!-- Save Button -->
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="UpdatePassword" Disabled="@IsSaving">
+                    @if (IsSaving)
+                    {
+                        <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Save" />
+                        @:Update Password
+                    }
+                </MudButton>
+            </MudForm>
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
+
+<style>
+    .security-container {
+        padding: 24px;
+    }
+
+    .security-card {
+        margin-bottom: 24px;
+        border-radius: 12px;
+    }
+
+    .security-title {
+        margin-left: 16px;
+        font-weight: bold;
+    }
+
+    .security-subtitle {
+        margin-bottom: 16px;
+    }
+
+    .form-field {
+        margin-bottom: 16px;
+        width: 100%;
+    }
+</style>
+
+@code {
+    private MudForm PasswordForm;
+    private string CurrentPassword;
+    private string NewPassword;
+    private string ConfirmPassword;
+    private bool IsSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        int? userId = await LocalStorage.GetItemAsync<int?>("userId");
+
+        if (!userId.HasValue || userId.Value == 0)
+        {
+            Snackbar.Add("User not logged in. Redirecting to login page.", Severity.Warning);
+        }
+    }
+
+    private async Task UpdatePassword()
+    {
+        if (IsSaving) return;
+
+        IsSaving = true;
+
+        try
+        {
+            if (!PasswordForm.IsValid)
+            {
+                Snackbar.Add("Please fill out all required fields correctly.", Severity.Warning);
+                return;
+            }
+
+            if (NewPassword != ConfirmPassword)
+            {
+                Snackbar.Add("New Password and Confirm Password do not match.", Severity.Error);
+                return;
+            }
+
+            int? userId = await LocalStorage.GetItemAsync<int?>("userId");
+            if (!userId.HasValue || userId.Value == 0)
+            {
+                Snackbar.Add("User not logged in. Please log in again.", Severity.Error);
+                return;
+            }
+
+            // Fetch the user from the database
+            var user = await DbContext.Users.FirstOrDefaultAsync(u => u.Id == userId.Value);
+            if (user == null || !VerifyPassword(CurrentPassword, user.PasswordHash))
+            {
+                Snackbar.Add("Invalid current password.", Severity.Error);
+                return;
+            }
+
+            // Update the password
+            user.PasswordHash = ComputeHash(NewPassword);
+            DbContext.Users.Update(user);
+            await DbContext.SaveChangesAsync();
+
+            Snackbar.Add("Password updated successfully!", Severity.Success);
+            CurrentPassword = string.Empty;
+            NewPassword = string.Empty;
+            ConfirmPassword = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error updating password: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private bool VerifyPassword(string inputPassword, byte[] storedHash)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var inputHash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(inputPassword));
+        return inputHash.SequenceEqual(storedHash);
+    }
+
+    private byte[] ComputeHash(string input)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        return sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+    }
+}

@@ -1,0 +1,46 @@
+﻿<MudNavMenu>
+    <!-- Main Links -->
+    <MudNavLink Href="/" Match="NavLinkMatch.All">
+        <MudIcon Icon="@Icons.Material.Filled.Dashboard" /> Dashboard
+    </MudNavLink>
+    <MudNavLink Href="/tasks" Match="NavLinkMatch.Prefix">
+        <MudIcon Icon="@Icons.Material.Filled.ListAlt" /> My Tasks
+    </MudNavLink>
+    <MudNavLink Href="/calendar" Match="NavLinkMatch.Prefix">
+        <MudIcon Icon="@Icons.Material.Filled.CalendarToday" /> Calendar
+    </MudNavLink>
+    <MudNavLink Href="/share-task" Match="NavLinkMatch.Prefix">
+        <MudIcon Icon="@Icons.Material.Filled.Email" /> Share a Task
+    </MudNavLink>
+
+    <!-- Task Management Group -->
+    <MudNavGroup Title="Task Management" Expanded="true">
+        <MudNavLink Href="/add-task" Match="NavLinkMatch.Prefix">
+            <MudIcon Icon="@Icons.Material.Filled.AddCircleOutline" /> Add New Task
+        </MudNavLink>
+        <MudNavLink Href="/tasks/completed" Match="NavLinkMatch.Prefix">
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircleOutline" /> Completed Tasks
+        </MudNavLink>
+        <MudNavLink Href="/tasks/pending" Match="NavLinkMatch.Prefix">
+            <MudIcon Icon="@Icons.Material.Filled.PendingActions" /> Pending Tasks
+        </MudNavLink>
+    </MudNavGroup>
+
+    <!-- Settings Group -->
+    <MudNavGroup Title="Settings" Expanded="false">
+        <MudNavLink Href="/profile" Match="NavLinkMatch.Prefix">
+            <MudIcon Icon="@Icons.Material.Filled.Person" /> Profile
+        </MudNavLink>
+        <MudNavLink Href="/security" Match="NavLinkMatch.Prefix">
+            <MudIcon Icon="@Icons.Material.Filled.Security" /> Security
+        </MudNavLink>
+    </MudNavGroup>
+
+    <!-- Help and Information -->
+    <MudNavLink Href="/help" Match="NavLinkMatch.Prefix">
+        <MudIcon Icon="@Icons.Material.Filled.HelpOutline" /> Help
+    </MudNavLink>
+    <MudNavLink Href="/about" Match="NavLinkMatch.Prefix">
+        <MudIcon Icon="@Icons.Material.Filled.Info" /> About
+    </MudNavLink>
+</MudNavMenu>

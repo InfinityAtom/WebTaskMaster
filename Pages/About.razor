@@ -1,0 +1,187 @@
+﻿@page "/about"
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="about-container">
+    <!-- Header Section -->
+    <MudCard Class="about-header" Elevation="3">
+        <MudCardContent>
+            <div class="logo-wrapper">
+                <img src="logo.png" alt="TaskMaster Logo" class="logo" />
+            </div>
+            <MudText Typo="Typo.h4" Align="Align.Center" Class="about-title">About</MudText>
+            <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="about-subtitle">
+                Your ultimate task management companion. Organize, plan, and accomplish your goals with ease.
+            </MudText>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Features Section -->
+    <MudGrid GutterSize="GutterSize.Medium" Justify="Justify.Center" Class="features-section">
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3" Class="feature-card">
+                <MudCardHeader>
+                    <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Large" Class="profile-avatar">
+                        <MudIcon Icon="@Icons.Material.Filled.Task" />
+                    </MudAvatar>
+                    <MudText Typo="Typo.h6" Class="feature-title">Efficient Task Management</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    Add, edit, and organize tasks effortlessly. Stay on top of your deadlines and never miss a beat.
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3" Class="feature-card">
+                <MudCardHeader>
+                    <MudAvatar Color="Color.Secondary" Variant="Variant.Filled" Size="Size.Large" Class="profile-avatar">
+                        <MudIcon Icon="@Icons.Material.Filled.Event" />
+                    </MudAvatar>
+                    <MudText Typo="Typo.h6" Class="feature-title">Integrated Calendar</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    Visualize your schedule and tasks with an easy-to-use calendar. Plan your time effectively.
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3" Class="feature-card">
+                <MudCardHeader>
+                    <MudAvatar Color="Color.Tertiary" Variant="Variant.Filled" Size="Size.Large" Class="profile-avatar">
+                        <MudIcon Icon="@Icons.Material.Filled.Share" />
+                    </MudAvatar>
+                    <MudText Typo="Typo.h6" Class="feature-title">Collaborative Sharing</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    Share tasks with team members or friends via email and work together seamlessly.
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3" Class="feature-card">
+                <MudCardHeader>
+                    <MudAvatar Color="Color.Info" Variant="Variant.Filled" Size="Size.Large" Class="profile-avatar">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" />
+                    </MudAvatar>
+                    <MudText Typo="Typo.h6" Class="feature-title">Personalized Profile</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    Manage your profile and tailor TaskMaster to suit your preferences.
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <!-- Mission Statement Section -->
+    <MudCard Class="mission-section" Elevation="3">
+        <MudCardContent>
+            <MudText Typo="Typo.h5" Align="Align.Center" Class="mission-title">
+                Our Mission
+            </MudText>
+            <MudText Typo="Typo.body1" Align="Align.Center" Class="mission-text">
+                At TaskMaster, our mission is to empower individuals and teams with intuitive tools to
+                organize their tasks and achieve their goals efficiently. We believe that great task
+                management is the cornerstone of productivity and success.
+            </MudText>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Footer Section -->
+    <div class="footer">
+        <MudText Typo="Typo.body2" Align="Align.Center" Class="footer-text">
+            &copy; 2024 TaskMaster. All rights reserved.
+        </MudText>
+    </div>
+</MudContainer>
+
+<style>
+    /* General Container Styling */
+    .about-container {
+        padding: 32px;
+        background-color: #f9f9f9;
+    }
+
+    /* Header Styling */
+    .about-header {
+        text-align: center;
+        padding: 24px;
+        margin-bottom: 32px;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .logo-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 16px;
+    }
+
+    .logo {
+        width: 240px;
+        height: auto;
+    }
+
+    .about-title {
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #333;
+    }
+
+    .about-subtitle {
+        color: #555;
+    }
+
+    /* Features Section */
+    .features-section {
+        margin-bottom: 48px;
+    }
+
+    .feature-card {
+        border-radius: 16px;
+        padding: 16px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .feature-title {
+        margin-left: 16px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    /* Mission Section */
+    .mission-section {
+        text-align: center;
+        padding: 24px;
+        margin-top: 32px;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .mission-title {
+        font-weight: bold;
+        margin-bottom: 16px;
+        color: #333;
+    }
+
+    .mission-text {
+        color: #555;
+    }
+
+    /* Footer Section */
+    .footer {
+        margin-top: 48px;
+        padding: 16px 0;
+        background-color: #ffffff;
+        text-align: center;
+        border-top: 1px solid #ddd;
+    }
+
+    .footer-text {
+        color: #777;
+    }
+</style>

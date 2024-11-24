@@ -1,0 +1,130 @@
+﻿@page "/register"
+@using WebTaskMaster.Model
+@inject NavigationManager NavigationManager
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject WebTaskMaster.Model.TaskMasterContext DbContext
+@inject ISnackbar Snackbar
+@layout WebTaskMaster.Shared.LoginLayout
+
+<style>
+    /* Center the registration container on the page */
+    .registration-container {
+        max-width: 450px;
+        margin: 5% auto;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        padding: 50px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Title Styling */
+    .registration-title {
+        font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        font-size: 28px;
+        font-weight: bold;
+        color: #4a4a4a;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    /* Text Fields Styling */
+    .registration-field {
+        width: 100%;
+        margin-top: 12px;
+    }
+
+    /* Button Styling */
+    .registration-button {
+        width: 100%;
+        background-color: #007aff;
+        color: #fff;
+        border-radius: 10px;
+        padding: 10px;
+        font-weight: bold;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        margin-top: 20px;
+    }
+
+        .registration-button:hover {
+            background-color: #005bb5;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+    /* Link Styling */
+    .registration-link {
+        font-size: 14px;
+        color: #007aff;
+        text-decoration: none;
+        transition: color 0.2s ease;
+        margin-top: 15px;
+    }
+
+        .registration-link:hover {
+            color: #005bb5;
+            text-decoration: underline;
+        }
+
+    /* Subtitle Styling */
+    .registration-subtitle {
+        font-size: 14px;
+        color: #888888;
+        text-align: center;
+        margin-top: 15px;
+    }
+
+    /* Additional Styling for Form */
+    .form-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+</style>
+
+<div class="registration-container">
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="registration-title">Create an Account</MudText>
+
+    <MudForm @ref="form" Valid="HandleValidSubmit" Class="form-container">
+        <MudTextField Label="Username" @bind-Value="username" Required="true" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Person" Class="registration-field" />
+        <MudTextField Label="Email" @bind-Value="email" Required="true" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Email" Class="registration-field" />
+        <MudTextField Label="First Name" @bind-Value="firstName" Required="true" Variant="Variant.Outlined" Class="registration-field" />
+        <MudTextField Label="Last Name" @bind-Value="lastName" Required="true" Variant="Variant.Outlined" Class="registration-field" />
+        <MudTextField Label="Password" @bind-Value="password" InputType="InputType.Password" Required="true" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Lock" Class="registration-field" />
+
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveToLocalStorageAndRedirect" Class="registration-button">Register</MudButton>
+    </MudForm>
+</div>
+
+@code {
+    private MudForm form;
+
+    private string username;
+    private string email;
+    private string firstName;
+    private string lastName;
+    private string password;
+
+    private async Task SaveToLocalStorageAndRedirect()
+    {
+        try
+        {
+            // Save all user data to local storage
+            await localStorage.SetItemAsync("tempUsername", username);
+            await localStorage.SetItemAsync("tempEmail", email);
+            await localStorage.SetItemAsync("tempFirstName", firstName);
+            await localStorage.SetItemAsync("tempLastName", lastName);
+            await localStorage.SetItemAsync("tempPassword", password);
+
+            Snackbar.Add("Registration details saved. Please verify your email.", Severity.Info);
+            NavigationManager.NavigateTo("/check-email");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+}

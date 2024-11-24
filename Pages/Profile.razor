@@ -1,0 +1,206 @@
+﻿@page "/profile"
+@using WebTaskMaster.Model
+@using Microsoft.EntityFrameworkCore
+@inject WebTaskMaster.Model.TaskMasterContext DbContext
+@inject ISnackbar Snackbar
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="profile-container">
+    <MudCard Elevation="5" Class="profile-card">
+        <MudCardHeader>
+            <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Large" Class="profile-avatar">
+                <MudIcon Icon="@Icons.Material.Filled.Person" />
+            </MudAvatar>
+
+            <MudText Typo="Typo.h5" Align="Align.Left" Class="profile-title">Profile Settings</MudText>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudText Typo="Typo.subtitle1" Align="Align.Left" Class="profile-subtitle">
+                View or update your profile information.
+            </MudText>
+
+            <!-- Display Profile Information -->
+            <MudGrid GutterSize="GutterSize.Small" Class="profile-grid">
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.body1"><MudIcon Icon="@Icons.Material.Filled.AccountCircle" /> <strong>Username:</strong> @User.Username</MudText>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.body1"><MudIcon Icon="@Icons.Material.Filled.Email" /> <strong>Email:</strong> @User.Email</MudText>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.body1"><MudIcon Icon="@Icons.Material.Filled.Person" /> <strong>First Name:</strong> @User.FirstName</MudText>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.body1"><MudIcon Icon="@Icons.Material.Filled.PersonOutline" /> <strong>Last Name:</strong> @User.LastName</MudText>
+                </MudItem>
+            </MudGrid>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="ToggleEditMode">
+                <MudIcon Icon="@Icons.Material.Filled.Edit" />
+                @if (IsEditing)
+                {
+                    @:Cancel
+                }
+                else
+                {
+                    @:Edit Profile
+                }
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+
+    @if (IsEditing)
+    {
+        <MudCard Elevation="3" Class="edit-card">
+            <MudCardContent>
+                <MudForm @ref="EditForm" Valid="IsFormValid">
+                    <!-- Editable Fields -->
+                    <MudTextField Label="Email" @bind-Value="EditableUser.Email" Required="true" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Email" Class="form-field" />
+                    <MudTextField Label="First Name" @bind-Value="EditableUser.FirstName" Required="true" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Person" Class="form-field" />
+                    <MudTextField Label="Last Name" @bind-Value="EditableUser.LastName" Required="true" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.PersonOutline" Class="form-field" />
+                    <MudTextField Label="Current Password" @bind-Value="CurrentPassword" InputType="InputType.Password" Required="true" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Lock" Class="form-field" />
+
+                    <!-- Save Button -->
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="SaveChanges" Disabled="@IsSaving">
+                        @if (IsSaving)
+                        {
+                            <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Save" />
+                            @:Save Changes
+                    }
+                    </MudButton>
+                </MudForm>
+            </MudCardContent>
+        </MudCard>
+    }
+</MudContainer>
+
+<style>
+    .profile-container {
+        padding: 24px;
+    }
+
+    .profile-card, .edit-card {
+        margin-bottom: 24px;
+        border-radius: 12px;
+    }
+
+        .profile-card:hover {
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+    .profile-title {
+        font-weight: bold;
+        margin-left: 16px;
+    }
+
+    .profile-subtitle {
+        margin-bottom: 16px;
+    }
+
+    .profile-grid {
+        margin-top: 16px;
+    }
+
+    .form-field {
+        margin-bottom: 16px;
+        width: 100%;
+    }
+</style>
+
+@code {
+    private MudForm EditForm;
+    private User User = new(); // Current user information
+    private User EditableUser = new(); // Editable version of the user
+    private string CurrentPassword;
+    private bool IsEditing = false; // Toggle between view and edit modes
+    private bool IsSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        int? userId = await LocalStorage.GetItemAsync<int?>("userId");
+
+        if (userId.HasValue)
+        {
+            User = await DbContext.Users.FirstOrDefaultAsync(u => u.Id == userId.Value) ?? new User();
+            EditableUser = new User
+                {
+                    Email = User.Email,
+                    FirstName = User.FirstName,
+                    LastName = User.LastName
+                };
+        }
+        else
+        {
+            Snackbar.Add("User not logged in. Redirecting to login page.", Severity.Warning);
+        }
+    }
+
+    private void ToggleEditMode()
+    {
+        IsEditing = !IsEditing;
+
+        if (!IsEditing)
+        {
+            // Reset editable fields if canceled
+            EditableUser.Email = User.Email;
+            EditableUser.FirstName = User.FirstName;
+            EditableUser.LastName = User.LastName;
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+        if (IsSaving) return;
+
+        IsSaving = true;
+
+        try
+        {
+            if (!EditForm.IsValid)
+            {
+                Snackbar.Add("Please fill out all required fields.", Severity.Warning);
+                return;
+            }
+
+            // Verify the current password
+            var userInDb = await DbContext.Users.FirstOrDefaultAsync(u => u.Id == User.Id);
+            if (userInDb == null || !VerifyPassword(CurrentPassword, userInDb.PasswordHash))
+            {
+                Snackbar.Add("Invalid current password.", Severity.Error);
+                return;
+            }
+
+            // Update user details
+            User.Email = EditableUser.Email;
+            User.FirstName = EditableUser.FirstName;
+            User.LastName = EditableUser.LastName;
+
+            DbContext.Users.Update(User);
+            await DbContext.SaveChangesAsync();
+
+            Snackbar.Add("Profile updated successfully!", Severity.Success);
+            IsEditing = false; // Exit edit mode
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error updating profile: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private bool VerifyPassword(string inputPassword, byte[] storedHash)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var inputHash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(inputPassword));
+        return inputHash.SequenceEqual(storedHash);
+    }
+}

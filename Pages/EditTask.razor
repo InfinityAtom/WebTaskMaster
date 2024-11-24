@@ -1,0 +1,138 @@
+﻿@page "/edit/{taskId:int}"
+@inject NavigationManager NavigationManager
+@using WebTaskMaster.Model
+@inject WebTaskMaster.Model.TaskMasterContext DbContext
+@inject ISnackbar snackbar
+@using System.Linq
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="page-container">
+    <MudPaper Class="form-container">
+        <MudText Typo="Typo.h5" Align="Align.Center" Class="header-title">Edit Task</MudText>
+
+        <!-- Task Fields -->
+        <MudTextField @bind-Value="Task.TaskTitle" Label="Title" Variant="Variant.Outlined" Required="true" Class="form-field" />
+        <MudTextField @bind-Value="Task.TaskDescription" Label="Description" Variant="Variant.Outlined" Multiline="true" Class="form-field" />
+
+        <!-- Start Date and Time -->
+        <MudDatePicker Label="Start Date" @bind-Value="StartDate" Variant="Variant.Outlined" Class="form-field" />
+        <MudTimePicker Label="Start Time" @bind-Value="StartTime" Variant="Variant.Outlined" Class="form-field" />
+
+        <!-- End Date and Time -->
+        <MudDatePicker Label="End Date" @bind-Value="EndDate" Variant="Variant.Outlined" Class="form-field" />
+        <MudTimePicker Label="End Time" @bind-Value="EndTime" Variant="Variant.Outlined" Class="form-field" />
+
+        <!-- Action Buttons -->
+        <div class="button-container">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveTask" Class="save-button">Save</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="Cancel" Class="cancel-button">Cancel</MudButton>
+        </div>
+    </MudPaper>
+</MudContainer>
+
+<style>
+    .page-container {
+        padding: 24px;
+    }
+
+    .form-container {
+        padding: 36px;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-title {
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: #333;
+    }
+
+    .form-field {
+        width: 100%;
+        margin-top: 12px;
+    }
+
+    .button-container {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .save-button {
+        width: 100%;
+    }
+
+    .cancel-button {
+        width: 100%;
+    }
+</style>
+
+@code {
+    [Parameter] public int TaskId { get; set; }
+    private Activity Task { get; set; } = new Activity();
+    private DateTime? StartDate { get; set; }
+    private TimeSpan? StartTime { get; set; }
+    private DateTime? EndDate { get; set; }
+    private TimeSpan? EndTime { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Retrieve the task from the database by ID
+        Task = await DbContext.Activities.FindAsync(TaskId);
+
+        if (Task == null)
+        {
+            snackbar.Add("Task not found.", Severity.Error);
+            NavigationManager.NavigateTo("/");
+            return;
+        }
+
+        // Initialize date and time
+        StartDate = Task.StartDate?.Date;
+        StartTime = Task.StartDate?.TimeOfDay;
+        EndDate = Task.EndDate?.Date;
+        EndTime = Task.EndDate?.TimeOfDay;
+    }
+
+    private async void SaveTask()
+    {
+        try
+        {
+            // Combine date and time for start and end
+            Task.StartDate = CombineDateAndTime(StartDate, StartTime);
+            Task.EndDate = CombineDateAndTime(EndDate, EndTime);
+
+            if (DbContext.Activities.Any(t => t.TaskId == TaskId))
+            {
+                // Update existing task
+                DbContext.Activities.Update(Task);
+            }
+            else
+            {
+                // Add new task if it doesn’t exist
+                DbContext.Activities.Add(Task);
+            }
+
+            await DbContext.SaveChangesAsync();
+            snackbar.Add("Task saved successfully!", Severity.Success);
+            NavigationManager.NavigateTo("/tasks");
+        }
+        catch (Exception ex)
+        {
+            snackbar.Add($"Error saving task: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel() => NavigationManager.NavigateTo("/tasks");
+
+    private DateTime? CombineDateAndTime(DateTime? date, TimeSpan? time)
+    {
+        if (date == null)
+        {
+            return null;
+        }
+
+        return time.HasValue ? date.Value.Date.Add(time.Value) : date.Value.Date;
+    }
+}

@@ -1,0 +1,182 @@
+﻿@page "/help"
+<MudContainer MaxWidth="MaxWidth.Large" Class="help-container">
+    <!-- Page Header -->
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="help-title">
+        Help Center
+    </MudText>
+    <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="help-subtitle">
+        Learn how to use TaskMaster efficiently with these guides.
+    </MudText>
+
+    <!-- Features Overview -->
+    <MudGrid GutterSize="GutterSize.Medium" Justify="Justify.Center" Class="overview-section">
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3" Class="feature-card">
+                <MudCardHeader>
+                    <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Large" Class="profile-avatar">
+                        <MudIcon Icon="@Icons.Material.Filled.Task" />
+                    </MudAvatar>
+                    <MudText Typo="Typo.h6" Class="feature-title">Manage Tasks</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    Organize your tasks efficiently with features to add, edit, and complete tasks.
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/tasks">Learn More</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3" Class="feature-card">
+                <MudCardHeader>
+                    <MudAvatar Color="Color.Secondary" Variant="Variant.Filled" Size="Size.Large" Class="profile-avatar">
+                        <MudIcon Icon="@Icons.Material.Filled.Event" />
+                    </MudAvatar>
+                    <MudText Typo="Typo.h6" Class="feature-title">View Calendar</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    Visualize your tasks on a calendar and stay on top of deadlines.
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary" Href="/calendar">Learn More</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3" Class="feature-card">
+                <MudCardHeader>
+                    <MudAvatar Color="Color.Tertiary" Variant="Variant.Filled" Size="Size.Large" Class="profile-avatar">
+                        <MudIcon Icon="@Icons.Material.Filled.Share" />
+                    </MudAvatar>
+                    <MudText Typo="Typo.h6" Class="feature-title">Share Tasks</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    Collaborate by sharing tasks via email with your team or friends.
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Tertiary" Href="/share-task">Learn More</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3" Class="feature-card">
+                <MudCardHeader>
+                    <MudAvatar Color="Color.Info" Variant="Variant.Filled" Size="Size.Large" Class="profile-avatar">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" />
+                    </MudAvatar>
+                    <MudText Typo="Typo.h6" Class="feature-title">Manage Profile</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    Update your profile and keep your information up to date.
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Info" Href="/profile">Learn More</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <!-- Detailed Help Section -->
+    <MudExpansionPanels MultiExpansion="true" Elevation="2" Class="help-panels">
+        <MudExpansionPanel Text="Managing Your Tasks">
+            <MudText Typo="Typo.body1">
+                Learn how to manage tasks efficiently in the <strong>Tasks</strong> section.
+            </MudText>
+            <ul class="help-list">
+                <li>View tasks with their title, description, and completion status.</li>
+                <li>Edit tasks to update their details as needed.</li>
+                <li>Mark tasks as complete or incomplete with a single click.</li>
+                <li>Delete tasks you no longer need.</li>
+            </ul>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/tasks">Go to Tasks</MudButton>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Adding New Tasks">
+            <MudText Typo="Typo.body1">
+                Use the <strong>Add Task</strong> page to create new tasks with detailed information.
+            </MudText>
+            <ul class="help-list">
+                <li>Enter a descriptive title and detailed task description.</li>
+                <li>Set start and end dates and times for scheduling.</li>
+                <li>Save the task to add it to your list.</li>
+            </ul>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/add-task">Go to Add Task</MudButton>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Viewing Tasks in Calendar">
+            <MudText Typo="Typo.body1">
+                View tasks by date in the <strong>Calendar</strong> section.
+            </MudText>
+            <ul class="help-list">
+                <li>Select a date to see all tasks scheduled for that day.</li>
+                <li>Hover over or click tasks for detailed information.</li>
+            </ul>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/calendar">Go to Calendar</MudButton>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Sharing Tasks">
+            <MudText Typo="Typo.body1">
+                Share tasks with others using the <strong>Share Task</strong> feature.
+            </MudText>
+            <ul class="help-list">
+                <li>Select a user by email.</li>
+                <li>Choose an existing task or create a new one.</li>
+                <li>Send the task to the recipient.</li>
+            </ul>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/share-task">Go to Share Task</MudButton>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
+</MudContainer>
+
+<style>
+    .help-container {
+        padding: 32px;
+        background-color: #f9f9f9;
+    }
+
+    .help-title {
+        margin-bottom: 16px;
+        font-weight: bold;
+    }
+
+    .help-subtitle {
+        margin-bottom: 32px;
+        color: #555;
+    }
+
+    .overview-section {
+        margin-bottom: 48px;
+    }
+
+    .feature-card {
+        border-radius: 16px;
+        padding: 16px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .feature-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        }
+
+    .feature-title {
+        margin-left: 16px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .help-panels {
+        margin-top: 32px;
+    }
+
+    .help-list {
+        margin-top: 16px;
+        padding-left: 24px;
+        list-style-type: disc;
+        color: #333;
+    }
+
+        .help-list li {
+            margin-bottom: 8px;
+        }
+</style>

@@ -1,0 +1,86 @@
+﻿@using WebTaskMaster.Model
+<MudDialog>
+    <DialogContent>
+        <!-- Dialog Header -->
+        <MudText Typo="Typo.h6" Align="Align.Center" Class="dialog-title">Confirm Task Deletion</MudText>
+        <MudText Align="Align.Center" Class="dialog-subtitle">Are you sure you want to delete the following task?</MudText>
+
+        <!-- Task Details -->
+        <MudPaper Class="task-details" Outlined="true">
+            <MudText><strong>Title:</strong> @TaskToDelete?.TaskTitle</MudText>
+            <MudText><strong>Description:</strong> @TaskToDelete?.TaskDescription</MudText>
+            <MudText><strong>Start Date:</strong> @(TaskToDelete?.StartDate?.ToShortDateString() ?? "No Start Date")</MudText>
+            <MudText><strong>End Date:</strong> @(TaskToDelete?.EndDate?.ToShortDateString() ?? "No End Date")</MudText>
+        </MudPaper>
+
+        <!-- Action Buttons -->
+        <div class="button-container">
+            <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="ConfirmDelete" Class="confirm-button">Delete</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="Cancel" Class="cancel-button">Cancel</MudButton>
+        </div>
+    </DialogContent>
+</MudDialog>
+
+<style>
+    /* Dialog Styles */
+    .dialog-title {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #d32f2f;
+    }
+
+    .dialog-subtitle {
+        font-size: 1rem;
+        color: #666;
+        margin-bottom: 16px;
+    }
+
+    /* Task Details Paper */
+    .task-details {
+        padding: 24px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        margin-bottom: 24px;
+    }
+
+    /* Action Buttons Container */
+    .button-container {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 16px;
+    }
+
+    .confirm-button {
+        width: 100%;
+        background-color: #d32f2f;
+        color: white;
+    }
+
+    .cancel-button {
+        width: 100%;
+        color: #666;
+    }
+
+    /* Button Hover Effects */
+    .confirm-button:hover {
+        background-color: #b71c1c;
+    }
+
+    .cancel-button:hover {
+        background-color: #f0f0f0;
+    }
+</style>
+
+@code {
+    [CascadingParameter] public MudDialogInstance MudDialog { get; set; }
+    [Parameter] public Activity TaskToDelete { get; set; }
+
+    private void ConfirmDelete()
+    {
+        MudDialog.Close(DialogResult.Ok(TaskToDelete));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

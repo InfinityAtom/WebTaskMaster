@@ -1,0 +1,319 @@
+﻿@page "/check-email"
+@using System.Net.Mail
+@using System.Net
+@using WebTaskMaster.Model
+@inject NavigationManager NavigationManager
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject ISnackbar Snackbar
+@inject WebTaskMaster.Model.TaskMasterContext DbContext
+
+<div class="check-email-container">
+    <img src="logo.png" alt="Task Master Logo" class="logo" />
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="title">Email Verification</MudText>
+    <MudText Typo="Typo.body1" Align="Align.Center" Class="subtitle">
+        Please enter the code sent to your email to verify your account.
+    </MudText>
+
+    <MudForm @ref="form" Class="form">
+        <MudTextField Label="Verification Code" @bind-Value="InputCode" Variant="Variant.Outlined" Required="true" Class="form-field" />
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="ValidateCode" Class="submit-button">Submit</MudButton>
+    </MudForm>
+
+    <MudButton Color="Color.Secondary" Variant="Variant.Outlined" OnClick="ResendCode" Disabled="isResendDisabled" Class="resend-button">
+        @if (isResendDisabled)
+        {
+            @:Resend Code (Available in @timer seconds)
+        }
+        else
+        {
+            @:Resend Code
+        }
+    </MudButton>
+</div>
+
+<style>
+    .check-email-container {
+        max-width: 400px;
+        margin: 50px auto;
+        padding: 30px;
+        border-radius: 12px;
+        background: #ffffff;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+
+    .logo {
+        width: 150px;
+        margin-bottom: 20px;
+    }
+
+    .title {
+        font-weight: bold;
+        color: #333333;
+        margin-bottom: 10px;
+    }
+
+    .subtitle {
+        color: #666666;
+        margin-bottom: 20px;
+    }
+
+    .form {
+        margin-top: 20px;
+    }
+
+    .form-field {
+        margin-bottom: 20px;
+        width: 100%;
+    }
+
+    .submit-button {
+        width: 100%;
+        margin-top: 10px;
+        font-weight: bold;
+    }
+
+    .resend-button {
+        width: 100%;
+        margin-top: 20px;
+        font-size: 14px;
+        color: #007bff;
+        border-color: #007bff;
+        font-weight: bold;
+    }
+
+        .resend-button:disabled {
+            color: #ccc;
+            border-color: #ccc;
+        }
+</style>
+@code {
+    private MudForm form;
+    private string InputCode;
+    private string GeneratedCode;
+    private int attempts = 0;
+    private int timer = 10;
+    private bool isResendDisabled = false;
+    private System.Timers.Timer countdownTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Retrieve the generated code and user data from local storage
+        GeneratedCode = new Random().Next(100000, 999999).ToString();
+        await localStorage.SetItemAsync("generatedCode", GeneratedCode);
+        var email = await localStorage.GetItemAsync<string>("tempEmail");
+
+        // Send validation email
+        await SendValidationEmail(email);
+    }
+
+    private async Task ValidateCode()
+    {
+        if (InputCode == GeneratedCode)
+        {
+            Snackbar.Add("Email validated successfully!", Severity.Success);
+
+            // Retrieve user data from local storage
+            var username = await localStorage.GetItemAsync<string>("tempUsername");
+            var email = await localStorage.GetItemAsync<string>("tempEmail");
+            var firstName = await localStorage.GetItemAsync<string>("tempFirstName");
+            var lastName = await localStorage.GetItemAsync<string>("tempLastName");
+            var password = await localStorage.GetItemAsync<string>("tempPassword");
+
+            // Save the user to the database
+            var newUser = new User
+                {
+                    Username = username,
+                    Email = email,
+                    FirstName = firstName,
+                    LastName = lastName,
+                    PasswordHash = HashPassword(password),
+                    Role = "User",
+                    CreatedAt = DateTime.UtcNow
+                };
+            DbContext.Users.Add(newUser);
+            await DbContext.SaveChangesAsync();
+
+            // Store user ID in local storage BEFORE redirection
+            await localStorage.SetItemAsync("userId", newUser.Id);
+
+            // Clear temporary data
+            await ClearTempStorage();
+
+            // Redirect to dashboard
+            NavigationManager.NavigateTo("/", forceLoad: true);
+        }
+        else
+        {
+            attempts++;
+            Snackbar.Add($"Invalid code. {3 - attempts} attempts left.", Severity.Error);
+
+            if (attempts >= 3)
+            {
+                await ClearTempStorage();
+                Snackbar.Add("Too many failed attempts. Please register again.", Severity.Error);
+                NavigationManager.NavigateTo("/register", forceLoad: true);
+            }
+        }
+    }
+
+
+    private async Task ResendCode()
+    {
+        isResendDisabled = true;
+        var email = await localStorage.GetItemAsync<string>("tempEmail");
+        await SendValidationEmail(email);
+
+        countdownTimer = new System.Timers.Timer(1000);
+        countdownTimer.Elapsed += (sender, e) =>
+        {
+            if (timer > 0)
+            {
+                timer--;
+            }
+            else
+            {
+                isResendDisabled = false;
+                timer = 10;
+                countdownTimer.Stop();
+            }
+        };
+        countdownTimer.Start();
+    }
+
+    private async Task SendValidationEmail(string email)
+    {
+        var emailBody = GenerateHtmlEmail("Email Verification", $"Your verification code is {GeneratedCode}.", null, null);
+        await SendEmail(email, "Email Verification", emailBody);
+    }
+
+    private byte[] HashPassword(string password)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        return sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+    }
+
+    private async Task ClearTempStorage()
+    {
+        await localStorage.RemoveItemAsync("tempUsername");
+        await localStorage.RemoveItemAsync("tempEmail");
+        await localStorage.RemoveItemAsync("tempFirstName");
+        await localStorage.RemoveItemAsync("tempLastName");
+        await localStorage.RemoveItemAsync("tempPassword");
+        await localStorage.RemoveItemAsync("generatedCode");
+    }
+
+    private async Task SendEmail(string toEmail, string subject, string body)
+    {
+        var fromAddress = new MailAddress("noreply-taskmaster@infinity-atom.ro", "Task Master");
+        var toAddress = new MailAddress(toEmail);
+
+        using var smtpClient = new SmtpClient
+            {
+                Host = "mail.infinity-atom.ro",
+                Port = 587,
+                EnableSsl = true,
+                DeliveryMethod = SmtpDeliveryMethod.Network,
+                UseDefaultCredentials = false,
+                Credentials = new NetworkCredential(fromAddress.Address, "Songocu003")
+            };
+        using var message = new MailMessage(fromAddress, toAddress)
+            {
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = true
+            };
+        await smtpClient.SendMailAsync(message);
+    }
+
+    private string GenerateHtmlEmail(string title, string description, DateTime? startDate, DateTime? endDate)
+    {
+        string logoSrc = "https://infinity-atom.ro/logo.png"; // Replace with your actual logo URL
+
+        return $@"
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>{title}</title>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }}
+        .container {{
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }}
+        .header {{
+            background-color: rgba(89,74,226,1);
+            padding: 20px;
+            text-align: center;
+        }}
+        .header img {{
+            width: 120px;
+        }}
+        .header h1 {{
+            color: #ffffff;
+            font-size: 24px;
+            margin-top: 10px;
+        }}
+        .content {{
+            padding: 20px;
+        }}
+        .content p {{
+            font-size: 16px;
+            color: #555555;
+            margin-bottom: 20px;
+        }}
+        .code {{
+            font-size: 20px;
+            font-weight: bold;
+            color: #4a4a4a;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px auto;
+            width: fit-content;
+        }}
+        .footer {{
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #999999;
+            background: #f4f4f9;
+            border-top: 1px solid #eeeeee;
+        }}
+        .footer a {{
+            color: #4a90e2;
+            text-decoration: none;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <img src='{logoSrc}' alt='Task Master Logo'>
+            <h1>{title}</h1>
+        </div>
+        <div class='content'>
+            <p>{description}</p>
+            <div class='code'>{GeneratedCode}</div>
+        </div>
+        <div class='footer'>
+            &copy; 2019-2024 Infinity Atom. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>";
+    }
+
+}
